@@ -35,7 +35,7 @@ public class OrderEventListener {
             orderEvent = objectMapper.readValue(message, OrderEvent.class);
 
         } catch (Exception jsonEx) {
-            logger.warn("Failed to parse JSON. Trying fallback format...");
+                       logger.warn("Failed to parse JSON ({}). Trying fallback format...", jsonEx.getMessage());
 
             try {
                 Pattern p = Pattern.compile("Order\\s+Placed\\s+with\\s+ID:\\s*(\\d+)");
@@ -59,7 +59,7 @@ public class OrderEventListener {
         }
 
         paymentEvent.setStatus("SUCCESS");
-        paymentEvent.setAmount(0.0);
+        paymentEvent.setAmount(orderEvent != null && orderEvent.getTotalAmount() != null ? orderEvent.getTotalAmount() : 0.0);
 
         producer.sendPaymentEvent(paymentEvent);
     }

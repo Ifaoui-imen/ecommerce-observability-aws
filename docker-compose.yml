@@ -1,0 +1,265 @@
+services:
+
+  # ================== INFRASTRUCTURE ==================
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"          # 5433 côté PC pour ne pas gêner un Postgres déjà installé
+    volumes:
+      - ./init-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend-net
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend-net
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    networks:
+      - backend-net
+
+  # ================== SPRING CLOUD ==================
+
+  discovery-server:
+    image: discovery-server:latest
+    build: ./discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - backend-net
+
+  gateway-service:
+    image: gateway-service:latest
+    build: ./gateway-service
+    container_name: gateway-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+    restart: on-failure
+    networks:
+      - backend-net
+
+  # ================== MICROSERVICES ==================
+
+  auth-service:
+    image: auth-service:latest
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_service_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  user-service:
+    image: user-service:latest
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "8090:8090"
+    environment:
+      - SERVER_PORT=8090
+      - SPRING_APPLICATION_NAME=user-service      # absent du fichier properties -> sinon "UNKNOWN" dans Eureka
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  product-service:
+    image: product-service:latest
+    build: ./product-service
+    container_name: product-service
+    ports:
+      - "8091:8091"
+    environment:
+      - SERVER_PORT=8091
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ai_ecommerce_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  inventory-service:
+    image: inventory-service:latest
+    build: ./inventory-service
+    container_name: inventory-service
+    ports:
+      - "8092:8092"
+    environment:
+      - SERVER_PORT=8092
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventorydb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  cart-service:
+    image: cart-service:latest
+    build: ./cart-service
+    container_name: cart-service
+    ports:
+      - "8093:8093"
+    environment:
+      - SERVER_PORT=8093
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      discovery-server:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  order-service:
+    image: order-service:latest
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "8094:8094"
+    environment:
+      - SERVER_PORT=8094
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_service
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  payment-service:
+    image: payment-service:latest
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8097:8097"
+    environment:
+      - SERVER_PORT=8097
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+  notification-service:
+    image: notification-service:latest
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8098:8098"
+    environment:
+      - SERVER_PORT=8098
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      discovery-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - backend-net
+
+networks:
+  backend-net:
+    driver: bridge
+
+volumes:
+  pgdata:

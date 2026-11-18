@@ -1,6 +1,7 @@
 package ai.ecommerce.orderservice.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "order_items")
@@ -14,6 +15,7 @@ public class OrderItem {
     private Integer quantity;
     private Double price;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "order_id")   // foreign key column in DB
     private Order order;
