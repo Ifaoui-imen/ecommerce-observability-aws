@@ -17,8 +17,8 @@ public class PaymenteventListener {
     @KafkaListener(topics = "payment-processed", groupId = "notification-service-group")
     public void consume(String message) {
         try {
-            logger.info("NotificationService received event: {}", message);
 
+            logger.info("[KAFKA - temporaire] NotificationService received event: {}", message);
             PaymentEvent event = objectMapper.readValue(message, PaymentEvent.class);
 
             logger.info("Sending notification → User: {}, Order: {}, Amount: {}, Status: {}",
