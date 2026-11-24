@@ -1,7 +1,7 @@
 package com.ai.ecommerce.paymentservice.controller;
 
-import com.ai.ecommerce.paymentservice.kafka.PaymentEventProducer;
 import com.ai.ecommerce.paymentservice.Model.PaymentEvent;
+import com.ai.ecommerce.paymentservice.events.PaymentEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,13 +11,13 @@ import java.util.UUID;
 @RequestMapping("/api/payments")
 public class PaymentController {
 
-    private final PaymentEventProducer producer;
+    private final PaymentEventPublisher publisher;
 
-    public PaymentController(PaymentEventProducer producer) {
-        this.producer = producer;
+    public PaymentController(PaymentEventPublisher publisher) {
+        this.publisher = publisher;
     }
 
-    // Mock endpoint to create a payment and publish event
+    // Endpoint de test : crée un paiement et publie l'événement sur EventBridge
     @PostMapping("/charge")
     public ResponseEntity<PaymentEvent> charge(@RequestParam(required = false) Long orderId,
                                                @RequestParam(required = false) String userId,
@@ -29,7 +29,7 @@ public class PaymentController {
         pe.setStatus("SUCCESS");
         pe.setAmount(amount);
 
-        producer.sendPaymentEvent(pe);
+        publisher.publish(pe);
         return ResponseEntity.ok(pe);
     }
 }

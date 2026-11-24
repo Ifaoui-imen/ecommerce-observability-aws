@@ -8,7 +8,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 
 @SpringBootApplication
-@EnableDiscoveryClient
+
 public class AuthServiceApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthServiceApplication.class);

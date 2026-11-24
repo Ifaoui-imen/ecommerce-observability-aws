@@ -12,8 +12,6 @@
     <properties>
         <java.version>17</java.version>
         <spring.boot.version>3.3.5</spring.boot.version>
-        <maven.compiler.source>17</maven.compiler.source>
-<maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <parent>
@@ -30,16 +28,16 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Eureka Client -->
+        <!-- Spring Cloud AWS : lecture des files SQS (@SqsListener) -->
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <groupId>io.awspring.cloud</groupId>
+            <artifactId>spring-cloud-aws-starter-sqs</artifactId>
         </dependency>
 
-        <!-- Kafka -->
+                <!-- AWS SDK v2 : client EventBridge (PutEvents) -->
         <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>eventbridge</artifactId>
         </dependency>
 
         <!-- Actuator -->
@@ -54,14 +52,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-
-        <!-- PostgreSQL Driver (Correct) -->
+        <!-- PostgreSQL Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
 
         <!-- Testing -->
         <dependency>
@@ -78,6 +74,14 @@
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
                 <version>2023.0.3</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud AWS 3.2.x = compatible Spring Boot 3.3 -->
+            <dependency>
+                <groupId>io.awspring.cloud</groupId>
+                <artifactId>spring-cloud-aws-dependencies</artifactId>
+                <version>3.2.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

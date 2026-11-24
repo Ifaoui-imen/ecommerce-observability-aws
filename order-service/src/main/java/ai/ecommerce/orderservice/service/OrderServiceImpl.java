@@ -4,7 +4,8 @@ import ai.ecommerce.orderservice.dto.OrderItemRequest;
 import ai.ecommerce.orderservice.dto.OrderRequest;
 import ai.ecommerce.orderservice.entity.Order;
 import ai.ecommerce.orderservice.entity.OrderItem;
-import ai.ecommerce.orderservice.kafka.OrderEventProducer;
+import ai.ecommerce.orderservice.events.OrderCreatedEvent;
+import ai.ecommerce.orderservice.events.OrderEventPublisher;
 import ai.ecommerce.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +16,12 @@ import java.util.List;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderEventProducer eventProducer;
+    private final OrderEventPublisher eventPublisher;    // EventBridge
 
     public OrderServiceImpl(OrderRepository orderRepository,
-                            OrderEventProducer eventProducer) {
+                            OrderEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
-        this.eventProducer = eventProducer;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -29,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
         // Create Order
         Order order = new Order();
         order.setUserId(orderRequest.getUserId());
+        order.setStatus(Order.STATUS_CREATED);
 
         List<OrderItem> orderItems = new ArrayList<>();
         double total = 0.0;
@@ -50,12 +52,18 @@ public class OrderServiceImpl implements OrderService {
         // Save Order
         Order savedOrder = orderRepository.save(order);
 
-        // Send Kafka event
-        eventProducer.sendOrderCreatedEvent(
+        // Publish OrderCreated on EventBridge
+        List<OrderCreatedEvent.Item> eventItems = new ArrayList<>();
+        for (OrderItem item : savedOrder.getItems()) {
+            eventItems.add(new OrderCreatedEvent.Item(
+                    item.getProductId(), item.getQuantity(), item.getPrice()));
+        }
+        eventPublisher.publishOrderCreated(new OrderCreatedEvent(
                 savedOrder.getId(),
                 savedOrder.getUserId(),
-                savedOrder.getTotalAmount()
-        );
+                savedOrder.getTotalAmount(),
+                eventItems
+        ));
 
         return savedOrder;
     }

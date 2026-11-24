@@ -25,6 +25,7 @@ public class InventoryServiceImpl implements InventoryService{
     @Override
     public InventoryItem updateItem(Long id, InventoryItem item) {
         InventoryItem existingItem = getItemById(id);
+        existingItem.setProductId(item.getProductId());
         existingItem.setProductName(item.getProductName());
         existingItem.setQuantity(item.getQuantity());
         existingItem.setLocation(item.getLocation());
