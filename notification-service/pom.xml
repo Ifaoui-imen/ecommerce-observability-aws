@@ -54,12 +54,7 @@
             <artifactId>spring-cloud-aws-starter-sqs</artifactId>
         </dependency>
 
-        <!-- Kafka (temporaire : encore lu pour payment-processed jusqu'à l'étape E) -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-
+    
         <!-- Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

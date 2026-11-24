@@ -1,11 +1,13 @@
 package com.ai.ecommerce.paymentservice.Model;
 
+/** Contenu du champ "detail" des événements PaymentCompleted / PaymentFailed (voir docs/events.md) */
 public class PaymentEvent {
     private String paymentId;
-    private Long orderId;      // may be null if not provided
+    private Long orderId;
     private String userId;
     private String status;     // SUCCESS / FAILED
-    private double amount;     // mocked amount
+    private double amount;
+    private String reason;     // rempli seulement si FAILED
 
     public PaymentEvent() {}
 
@@ -23,4 +25,7 @@ public class PaymentEvent {
 
     public double getAmount() { return amount; }
     public void setAmount(double amount) { this.amount = amount; }
+
+    public String getReason() { return reason; }
+    public void setReason(String reason) { this.reason = reason; }
 }

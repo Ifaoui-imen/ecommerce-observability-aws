@@ -231,15 +231,15 @@ services:
       - "8097:8097"
     environment:
       - SERVER_PORT=8097
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    
       # --- AWS (LocalStack en local) ---
       - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
       - SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
+      - APP_PAYMENT_FAILURE_RATE=0.0     # mettre 0.3 pour simuler 30 % d'éche
     depends_on:
-      kafka:
-        condition: service_healthy
+    
       localstack:
         condition: service_healthy
     restart: on-failure
@@ -254,15 +254,14 @@ services:
       - "8098:8098"
     environment:
       - SERVER_PORT=8098
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      
       # --- AWS (LocalStack en local) ---
       - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
       - SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
     depends_on:
-      kafka:
-        condition: service_healthy
+      
       localstack:
         condition: service_healthy
     restart: on-failure
