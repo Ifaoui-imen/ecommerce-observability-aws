@@ -164,8 +164,15 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventorydb
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+      # --- AWS (LocalStack en local) ---
+      - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
+      - SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     depends_on:
       postgres:
+        condition: service_healthy
+      localstack:
         condition: service_healthy
     restart: on-failure
     networks:
