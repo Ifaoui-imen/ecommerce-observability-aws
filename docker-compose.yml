@@ -206,16 +206,15 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/order_service
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # --- AWS (LocalStack en local) ---
-      - APP_AWS_ENDPOINT=http://localstack:4566
+      - APP_AWS_ENDPOINT=http://localstack:4566             # EventBridge (client créé dans AwsConfig)
       - APP_AWS_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test          # faux identifiants acceptés par LocalStack
+      - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566    # SQS (Spring Cloud AWS)
+      - SPRING_CLOUD_AWS_REGION_STATIC=us-east-1
+      - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
     depends_on:
       postgres:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
       localstack:
         condition: service_healthy

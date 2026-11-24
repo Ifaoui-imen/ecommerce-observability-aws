@@ -6,7 +6,6 @@ import ai.ecommerce.orderservice.entity.Order;
 import ai.ecommerce.orderservice.entity.OrderItem;
 import ai.ecommerce.orderservice.events.OrderCreatedEvent;
 import ai.ecommerce.orderservice.events.OrderEventPublisher;
-import ai.ecommerce.orderservice.kafka.OrderEventProducer;
 import ai.ecommerce.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,14 +16,11 @@ import java.util.List;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
-     private final OrderEventProducer eventProducer;      // Kafka (temporaire, supprimé à l'étape F)
     private final OrderEventPublisher eventPublisher;    // EventBridge
 
     public OrderServiceImpl(OrderRepository orderRepository,
-                            OrderEventProducer eventProducer,
                             OrderEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
-        this.eventProducer = eventProducer;
         this.eventPublisher = eventPublisher;
     }
 
@@ -34,6 +30,7 @@ public class OrderServiceImpl implements OrderService {
         // Create Order
         Order order = new Order();
         order.setUserId(orderRequest.getUserId());
+        order.setStatus(Order.STATUS_CREATED);
 
         List<OrderItem> orderItems = new ArrayList<>();
         double total = 0.0;
@@ -55,14 +52,7 @@ public class OrderServiceImpl implements OrderService {
         // Save Order
         Order savedOrder = orderRepository.save(order);
 
-              // 1. Kafka (temporaire : les consommateurs lisent encore Kafka jusqu'à l'étape D)
-        eventProducer.sendOrderCreatedEvent(
-                savedOrder.getId(),
-                savedOrder.getUserId(),
-                savedOrder.getTotalAmount()
-        );
-
-        // 2. EventBridge (cible finale)
+        // Publish OrderCreated on EventBridge
         List<OrderCreatedEvent.Item> eventItems = new ArrayList<>();
         for (OrderItem item : savedOrder.getItems()) {
             eventItems.add(new OrderCreatedEvent.Item(

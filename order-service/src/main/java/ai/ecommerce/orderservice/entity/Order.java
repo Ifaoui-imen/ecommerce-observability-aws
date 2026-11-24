@@ -7,12 +7,23 @@ import java.util.List;
 @Table(name = "orders")
 public class Order {
 
+    // Statuts possibles d'une commande
+    public static final String STATUS_CREATED = "CREATED";
+    public static final String STATUS_PAID = "PAID";
+    public static final String STATUS_PAYMENT_FAILED = "PAYMENT_FAILED";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;
     private Double totalAmount;
+
+    @Column(length = 30)
+    private String status;
+
+    @Column(length = 255)
+    private String paymentFailureReason;
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "order_id")
@@ -29,6 +40,12 @@ public class Order {
 
     public Double getTotalAmount() { return totalAmount; }
     public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getPaymentFailureReason() { return paymentFailureReason; }
+    public void setPaymentFailureReason(String paymentFailureReason) { this.paymentFailureReason = paymentFailureReason; }
 
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
